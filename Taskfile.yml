@@ -1,0 +1,19 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  default:
+    cmd: task -a
+
+  fuseki:build:
+    cmd: docker compose --profile fuseki build
+
+  fuseki:up:
+    cmd: docker compose --profile fuseki up -d
+
+  fuseki:down:
+    cmd: docker compose --profile fuseki down
+
+  fuseki:clean:
+    cmd: docker compose --profile fuseki down -v
