@@ -15,6 +15,19 @@ See the tagged [images here](https://github.com/Kurrawong/fuseki-container-image
 
 ## Usage
 
+### Running a single Fuseki server with GeoSPARQL support
+
+```
+task fuseki:build
+
+task fuseki:up
+```
+
+This will enable the Fuseki UI at http://localhost:3030/
+
+### Running multple Fuseki servers with RDF Delta
+
+
 ## Entrypoints
 
 ## Adding Fuseki extensions to the classpath
@@ -22,3 +35,12 @@ See the tagged [images here](https://github.com/Kurrawong/fuseki-container-image
 ## Local Development
 
 See [Taskfile.yml](Taskfile.yml) for local development commands.
+
+## Jena patches/expansions
+
+We can build patches for Jena ourselves by developing on a specific version of the Jena source code, and including patches in `/docker/patches`.
+A simple example of this is the addition of the GeoSPARQL dependency in `/docker/patches/enable-geosparql.diff` as inspired by the zazuko docker image.
+
+The process to add these to our own jena deployment is to check out the current Jena version tag from https://github.com/apache/jena , e.g. using `git checkout jena-5.2.0`
+
+Then make the necessary changes, and run `git diff > my-patch.diff` and add `my-patch.diff` to `/docker/patches` and in the `Dockerfile`.

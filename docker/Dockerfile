@@ -3,6 +3,8 @@ ARG JENA_HOME="/opt/jena"
 ARG FUSEKI_HOME="/opt/fuseki"
 ARG FUSEKI_BASE="/fuseki"
 ARG JAVA_OPTIONS="-Xmx2048m -Xms2048m"
+ARG OTEL_JAR="opentelemetry-javaagent.jar"
+ARG JDEPS_EXTRA="jdk.crypto.cryptoki,jdk.crypto.ec,jdk.httpserver"
 
 #
 # Builder
@@ -11,14 +13,19 @@ FROM maven:3-eclipse-temurin-17 AS builder
 ARG JENA_VERSION
 ARG JENA_HOME
 ARG FUSEKI_HOME
+ARG OTEL_JAR
 ENV JENA_BUILD_DIR="/tmp/jena-build"
 ENV NODE_OPTIONS="--max-old-space-size=4096"
+
+WORKDIR ${JENA_BUILD_DIR}
 
 RUN apt-get update && \
     apt-get install -y \
         bash \
-        curl \ 
-        wget
+        curl \
+        wget \
+        patch \
+        unzip
 
 # Install Node.js and build dependencies
 RUN curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
@@ -30,22 +37,34 @@ RUN curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
 RUN corepack enable && \
     corepack prepare yarn@stable --activate
 
-# # Download Jena
-RUN wget --quiet https://github.com/apache/jena/archive/refs/tags/jena-${JENA_VERSION}.tar.gz -O /tmp/jena.tar.gz && \
-    mkdir -p ${JENA_BUILD_DIR} && \
-    tar -xzf /tmp/jena.tar.gz --strip-components=1 -C ${JENA_BUILD_DIR} && \
-    rm -f /tmp/jena.tar.gz
+# Download Jena source code
+RUN wget "https://github.com/apache/jena/archive/refs/tags/jena-${JENA_VERSION}.zip" -O jena.zip \
+  && unzip jena.zip && mv "jena-jena-${JENA_VERSION}" jena
 
-# # Build Fuseki
-WORKDIR ${JENA_BUILD_DIR}
+# Apply a dependency patch for GeoSPARQL support
+WORKDIR ${JENA_BUILD_DIR}/jena
+COPY patches/enable-geosparql.diff .
+RUN patch -p1 < enable-geosparql.diff
+
+WORKDIR ${JENA_BUILD_DIR}/jena/jena-fuseki2
 RUN mvn package -Dmaven.javadoc.skip=true -DskipTests
 
-# Extract Fuseki and Jena Cmds
-RUN mkdir -p ${FUSEKI_HOME} && \
-    tar -xzf ${JENA_BUILD_DIR}/jena-fuseki2/apache-jena-fuseki/target/apache-jena-fuseki-${JENA_VERSION}.tar.gz --strip-components=1 -C ${FUSEKI_HOME}
+RUN unzip "${JENA_BUILD_DIR}/jena/jena-fuseki2/apache-jena-fuseki/target/apache-jena-fuseki-${JENA_VERSION}.zip" \
+  && mkdir -p "${FUSEKI_HOME}" \
+  && cd "apache-jena-fuseki-${JENA_VERSION}" \
+  && find ./ -maxdepth 1 -mindepth 1 -exec mv -t "${FUSEKI_HOME}" {} + \
+  && cd .. \
+  && rm -rf "apache-jena-fuseki-${JENA_VERSION}"
 
-RUN mkdir -p ${JENA_HOME} && \
-    tar -xzf ${JENA_BUILD_DIR}/apache-jena/target/apache-jena-${JENA_VERSION}.tar.gz --strip-components=1 -C ${JENA_HOME}
+WORKDIR ${JENA_BUILD_DIR}/jena/apache-jena
+RUN mvn package -Dmaven.javadoc.skip=true -DskipTests
+
+RUN unzip "${JENA_BUILD_DIR}/jena/apache-jena/target/apache-jena-${JENA_VERSION}.zip" \
+  && mkdir -p "${JENA_HOME}" \
+  && cd "apache-jena-${JENA_VERSION}" \
+  && find ./ -maxdepth 1 -mindepth 1 -exec mv -t "${JENA_HOME}" {} + \
+  && cd .. \
+  && rm -rf "apache-jena-${JENA_VERSION}"
 
 #
 # Final
