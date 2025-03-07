@@ -3,8 +3,6 @@ ARG JENA_HOME="/opt/jena"
 ARG FUSEKI_HOME="/opt/fuseki"
 ARG FUSEKI_BASE="/fuseki"
 ARG JAVA_OPTIONS="-Xmx2048m -Xms2048m"
-ARG OTEL_JAR="opentelemetry-javaagent.jar"
-ARG JDEPS_EXTRA="jdk.crypto.cryptoki,jdk.crypto.ec,jdk.httpserver"
 
 #
 # Builder
@@ -13,7 +11,6 @@ FROM maven:3-eclipse-temurin-17 AS builder
 ARG JENA_VERSION
 ARG JENA_HOME
 ARG FUSEKI_HOME
-ARG OTEL_JAR
 ENV JENA_BUILD_DIR="/tmp/jena-build"
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
