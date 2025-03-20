@@ -12,6 +12,9 @@ tasks:
   fuseki:up:
     cmd: docker compose --profile fuseki up -d
 
+  fuseki:restart:
+    cmd: docker compose --profile fuseki restart fuseki
+
   fuseki:down:
     cmd: docker compose --profile fuseki down
 
