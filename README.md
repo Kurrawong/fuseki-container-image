@@ -210,9 +210,9 @@ WHERE {
 # returns <https://linked.data.gov.au/dataset/qld-addr/address/2fd46078-88c0-5f30-b43e-d2908d9445b6>
 ```
 
-### Lucene full text search
+### Lucene full-text search
 
-When configuring a spatial dataset, combined with a Lucene index, it's important that the `fuseki:dataset` of the `fuseki:Service` points to the dataset with type `text:TextDataset`, and not to the `geosparql:geosparqlDataset`. Only then can we combine a spatial index with a full text index. See `testdata/config-geosparql.ttl` for an example.
+When configuring a spatial dataset, combined with a Lucene index, it's important that the `fuseki:dataset` of the `fuseki:Service` points to the dataset with type `text:TextDataset`, and not to the `geosparql:geosparqlDataset`. Only then can we combine a spatial index with a full-text index. See `testdata/config-geosparql.ttl` for an example.
 
 With the lucene index enabled, the following queries are supported, according to the [documentation](https://jena.apache.org/documentation/query/text-query.html):
 
@@ -229,6 +229,26 @@ With the lucene index enabled, the following queries are supported, according to
 (?s ?sc ?lit) text:query ( "Queensland" "highlight:" ) # highlighting
 (?s ?sc ?lit) text:query ( "Queensland" "highlight:s:<em class='hiLite'> | e:</em>" ) # highlighting with HTML
 
+```
+
+That means now we can combine the full-text search with the spatial index, which means we can search for text occurrences within a certain geographical area:
+
+```
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+PREFIX text: <http://jena.apache.org/text#>
+
+SELECT DISTINCT ?address ?literal
+WHERE {
+  BIND("POLYGON ((152.685242 -27.161808, 152.698975 -27.829361, 153.492737 -27.829361, 153.435059 -27.178912, 152.685242 -27.161808))"^^geo:wktLiteral AS ?polygon)
+  ?address geo:hasGeometry / geo:asWKT ?point ;
+           rdfs:label ?addressLabel .
+  FILTER(geof:sfWithin(?point, ?polygon))
+  (?address ?score ?literal) text:query ( "Drive" "highlight:" ) .
+}
+# returns
+# 1<https://linked.data.gov.au/dataset/qld-addr/address/65cb1e52-fc1d-5dee-a2d2-ea7882d12c7e> "32 Barbaralla ↦Drive↤, Springwood, Queensland, Australia"@en
 ```
 
 ## Entrypoints
