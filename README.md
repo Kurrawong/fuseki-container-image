@@ -210,6 +210,27 @@ WHERE {
 # returns <https://linked.data.gov.au/dataset/qld-addr/address/2fd46078-88c0-5f30-b43e-d2908d9445b6>
 ```
 
+### Lucene full text search
+
+When configuring a spatial dataset, combined with a Lucene index, it's important that the `fuseki:dataset` of the `fuseki:Service` points to the dataset with type `text:TextDataset`, and not to the `geosparql:geosparqlDataset`. Only then can we combine a spatial index with a full text index. See `testdata/config-geosparql.ttl` for an example.
+
+With the lucene index enabled, the following queries are supported, according to the [documentation](https://jena.apache.org/documentation/query/text-query.html):
+
+```
+?s text:query 'Queensland'                              # simplest query
+?s text:query ('Queensland' 2)                          # with limit on results
+?s text:query (rdfs:label 'Queensland')                 # query specific property
+?s text:query (rdfs:label 'Queensland' 'lang:en')       # restrict search to one language
+(?s ?score) text:query 'Queensland'                     # include the score
+(?s ?score ?literal) text:query 'Queensland'            # include the original literal value
+(?s ?score ?literal ?g) text:query 'Queensland'         # include the graph
+(?s ?score ?literal) text:query (rdfs:label "(Barbaralla AND Queensland)") # Boolean operators
+(?s ?score ?literal) text:query (rdfs:label "(Queensla~)") # Fuzzy search
+(?s ?sc ?lit) text:query ( "Queensland" "highlight:" ) # highlighting
+(?s ?sc ?lit) text:query ( "Queensland" "highlight:s:<em class='hiLite'> | e:</em>" ) # highlighting with HTML
+
+```
+
 ## Entrypoints
 
 ## Adding Fuseki extensions to the classpath

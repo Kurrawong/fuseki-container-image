@@ -5,11 +5,11 @@
 @prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix tdb2:   <http://jena.apache.org/2016/tdb#> .
 @prefix geosparql: <http://jena.apache.org/geosparql#> .
+@prefix text: <http://jena.apache.org/text#> .
 
 ja:DatasetRDFS  rdfs:subClassOf  ja:RDFDataset .
 
-<http://jena.apache.org/geosparql#geosparqlDataset>
-        rdfs:subClassOf  ja:RDFDataset .
+geosparql:geosparqlDataset  rdfs:subClassOf  ja:RDFDataset .
 
 tdb2:GraphTDB  rdfs:subClassOf  ja:Model .
 
@@ -22,8 +22,7 @@ ja:RDFDatasetSink  rdfs:subClassOf  ja:RDFDataset .
 
 tdb2:GraphTDB2  rdfs:subClassOf  ja:Model .
 
-<http://jena.apache.org/text#TextDataset>
-        rdfs:subClassOf  ja:RDFDataset .
+text:TextDataset  rdfs:subClassOf  ja:RDFDataset .
 
 ja:RDFDatasetZero  rdfs:subClassOf  ja:RDFDataset .
 
@@ -46,7 +45,7 @@ ja:MemoryDataset  rdfs:subClassOf  ja:RDFDataset .
 
 :service_test  rdf:type            fuseki:Service ;
         rdfs:label                    "Test GeoSPARQL Dataset" ;
-        fuseki:dataset                :test_spatial_dataset ;
+        fuseki:dataset                :test_text_dataset ;
         fuseki:name                   "test-geosparql" ;
         fuseki:serviceQuery           "query" , "" , "sparql" ;
         fuseki:serviceReadGraphStore  "get" ;
@@ -73,3 +72,27 @@ ja:MemoryDataset  rdfs:subClassOf  ja:RDFDataset .
         rdf:type       tdb2:DatasetTDB2 ;
         tdb2:unionDefaultGraph true ;
         tdb2:location  "/fuseki/databases/test-geosparql" .
+
+:test_text_dataset rdf:type     text:TextDataset ;
+        text:dataset   :test_spatial_dataset ;
+        text:index     <#indexLucene> .
+
+<#indexLucene> a text:TextIndexLucene ;
+    text:directory <file:/fuseki/databases/test-geosparql/text_index> ;
+    text:entityMap <#entMap> ;
+    text:storeValues true ;
+    text:analyzer [ a text:StandardAnalyzer ] ;
+    text:queryAnalyzer [ a text:StandardAnalyzer ] ;
+    text:queryParser text:QueryParser ;
+    text:multilingualSupport true .
+
+<#entMap> a text:EntityMap ;
+    text:defaultField     "label" ;
+    text:entityField      "uri" ;
+    text:uidField         "uid" ;
+    text:langField        "lang" ;
+    text:graphField       "graph" ;
+    text:map (
+        [ text:field "label" ;
+          text:predicate rdfs:label ]
+    ) .
