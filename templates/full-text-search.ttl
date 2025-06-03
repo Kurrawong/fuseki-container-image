@@ -1,0 +1,130 @@
+# Full Text Search Enabled TDB2 Dataset
+#
+# Uses the lucene StandardAnalyzer
+# Defines an entity map for some common labelling and description predicates.
+# Defines a property list to enable searching all mapped entities at once.
+
+PREFIX :        <#>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX ex: <https://example.com/>
+PREFIX fuseki:  <http://jena.apache.org/fuseki#>
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX schema: <https://schema.org/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX tdb2:    <http://jena.apache.org/2016/tdb#>
+PREFIX text: <http://jena.apache.org/text#>
+
+[] rdf:type fuseki:Server .
+
+:service1 rdf:type fuseki:Service ;
+  fuseki:name                        "myds" ;
+  fuseki:serviceQuery                "sparql" ;
+  fuseki:serviceQuery                "query" ;
+  fuseki:serviceUpdate               "update" ;
+  fuseki:serviceUpload               "upload" ;
+  fuseki:serviceReadWriteGraphStore  "data" ;     
+  fuseki:serviceReadGraphStore       "get" ;
+  fuseki:dataset                     :text_dataset ;
+.
+
+:text_dataset rdf:type text:TextDataset ;
+  text:dataset :tdb_dataset_readwrite ;
+  text:index <#indexLucene> ;
+.
+
+:tdb_dataset_readwrite
+  rdf:type       tdb2:DatasetTDB2;
+  tdb2:unionDefaultGraph true ;
+  tdb2:location  "/fuseki/databases/myds" ;
+.
+
+<#indexLucene> a text:TextIndexLucene ;
+  text:directory "/fuseki/databases/myds" ;
+  text:entityMap <#entMap> ;
+  text:storeValues true ;
+  text:analyzer [ a text:StandardAnalyzer ] ;
+  # text:queryAnalyzer [ a text:KeywordAnalyzer ] ;
+  # text:queryParser text:AnalyzingQueryParser ;
+  # text:propLists ( [ . . . ] . . . ) ;
+  # text:defineAnalyzers ( [ . . . ] . . . ) ;
+  # text:multilingualSupport true ;
+  # Enable searching across all indexed fields with ex:allFtsFields
+  text:propLists (
+    [
+      text:propListProp ex:allFtsFields ;
+      text:props (
+        rdfs:label
+        skos:prefLabel
+        skos:altLabel
+        schema:name
+        schema:alternateName
+        schema:title
+        dcterms:title
+        schema:description
+        dcterms:description
+        schema:comment
+        rdfs:comment
+      ) ;
+    ]
+  ) ;
+.
+
+<#entMap> a text:EntityMap ;
+  text:defaultField "label" ;
+  text:entityField "uri" ;
+  text:uidField "uid" ;
+  text:langField "lang" ;
+  text:graphField "graph" ;
+  text:map
+  (
+    # common labeling predicates
+    [
+      text:field "label" ;
+      text:predicate rdfs:label
+    ]
+    [
+      text:field "preflabel" ;
+      text:predicate skos:prefLabel
+    ]
+    [
+      text:field "altlabel" ;
+      text:predicate skos:altLabel
+    ]
+    [
+      text:field "name" ;
+      text:predicate schema:name
+    ]
+    [
+      text:field "altname" ;
+      text:predicate schema:alternateName
+    ]
+    [
+      text:field "title" ;
+      text:predicate schema:title
+    ]
+    [
+      text:field "dctitle" ;
+      text:predicate dcterms:title
+    ]
+
+    # common text field predicates
+    [
+      text:field "description" ;
+      text:predicate schema:description
+    ]
+    [
+      text:field "dcdescription" ;
+      text:predicate dcterms:description
+    ]
+    [
+      text:field "comment" ;
+      text:predicate schema:comment
+    ]
+    [
+      text:field "rdfscomment" ;
+      text:predicate rdfs:comment
+    ]
+  )
+.
+
