@@ -9,7 +9,7 @@ index ce2a979a6f..cf1cce2a6f 100644
 +    <dependency>
 +      <groupId>org.apache.jena</groupId>
 +      <artifactId>jena-geosparql</artifactId>
-+      <version>5.2.0</version>
++      <version>5.5.0</version>
 +    </dependency>
 +
      <dependency>
