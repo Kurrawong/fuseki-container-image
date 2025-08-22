@@ -87,6 +87,10 @@ RUN apk add --no-cache \
         # coreutils required for tdb2.xloader with an updated version of sort with parallel support
         coreutils
 
+# Create fuseki user and group
+RUN addgroup -g 1000 fuseki && \
+    adduser -D -u 1000 -G fuseki fuseki
+
 COPY --from=builder ${JENA_HOME} ${JENA_HOME}
 COPY --from=builder ${FUSEKI_HOME} ${FUSEKI_HOME}
 
@@ -95,5 +99,17 @@ ENV PATH="${JENA_HOME}/bin:${FUSEKI_HOME}:${PATH}"
 COPY shiro.ini ${FUSEKI_BASE}/shiro.ini
 COPY config.ttl ${FUSEKI_BASE}/config.ttl
 COPY entrypoint.sh ${FUSEKI_HOME}/entrypoint.sh
+
+# Set proper ownership and permissions
+RUN chown -R fuseki:fuseki ${FUSEKI_BASE} ${FUSEKI_HOME} ${JENA_HOME} && \
+    chmod +x ${FUSEKI_HOME}/entrypoint.sh
+
+# Switch to non-root user
+USER fuseki
+
+EXPOSE 3030
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:3030/$/ping || exit 1
 
 CMD ["/opt/fuseki/entrypoint.sh"]
