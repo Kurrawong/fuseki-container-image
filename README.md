@@ -275,6 +275,28 @@ See [Taskfile.yml](Taskfile.yml) for local development commands.
 We can build patches for Jena ourselves by developing on a specific version of the Jena source code, and including patches in `/docker/patches`.
 A simple example of this is the addition of the GeoSPARQL dependency in `/docker/patches/enable-geosparql.diff` as inspired by the zazuko docker image.
 
-The process to add these to our own jena deployment is to check out the current Jena version tag from https://github.com/apache/jena , e.g. using `git checkout jena-6.0.0`
+### Upgrading to a new upstream Jena version
 
-Then make the necessary changes, and run `git diff > my-patch.diff` and add `my-patch.diff` to `/docker/patches` and in the `Dockerfile`.
+For this repository's current setup, the only required change for a normal upstream bump is:
+
+- update `ARG JENA_VERSION=...` in `docker/Dockerfile`
+
+The GeoSPARQL dependency patch file (`docker/patches/enable-geosparql.diff`) is already applied by `docker/Dockerfile`; it does not need to be edited for normal version bumps.
+
+Then verify locally with:
+
+```
+task fuseki:smoke
+```
+
+The smoke test is deterministic and will fail fast if the image/runtime behaviour changes.
+
+### When you need a Jena source patch
+
+Only follow this path when you need behaviour that is not available in upstream Jena:
+
+- check out the target Jena tag from https://github.com/apache/jena (for example `git checkout jena-6.0.0`)
+- make your changes in Jena source
+- generate a patch with `git diff > my-patch.diff`
+- add the patch to `/docker/patches`
+- apply it from `docker/Dockerfile` in the builder stage (as done for `enable-geosparql.diff`)
