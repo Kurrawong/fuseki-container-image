@@ -1,0 +1,4 @@
+services:
+  fuseki:
+    volumes:
+      - ./testdata/config-geosparql.ttl:/opt/fuseki/configuration/config-geosparql.ttl:ro
