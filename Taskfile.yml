@@ -20,3 +20,14 @@ tasks:
 
   fuseki:clean:
     cmd: docker compose --profile fuseki down -v
+
+  fuseki:smoke:run:
+    cmd: ./scripts/fuseki-smoke-test.sh
+
+  fuseki:smoke:
+    cmds:
+      - docker compose --profile fuseki down -v || true
+      - docker compose --profile fuseki build
+      - docker compose --profile fuseki up -d
+      - defer: docker compose --profile fuseki down -v
+      - task fuseki:smoke:run
