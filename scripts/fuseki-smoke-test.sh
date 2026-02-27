@@ -11,20 +11,27 @@ require_command() {
 
 require_command curl
 require_command jq
+require_command docker
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-FUSEKI_BASE_URL="${FUSEKI_BASE_URL:-http://localhost:3030}"
-SMOKE_DATASET="${SMOKE_DATASET:-test-geosparql}"
-SMOKE_DATA_FILE="${SMOKE_DATA_FILE:-${REPO_ROOT}/testdata/data-geosparql.ttl}"
-SMOKE_DATA_GRAPH="${SMOKE_DATA_GRAPH:-https://example.org/smoke-graph}"
-SMOKE_GEOSPARQL_EXPECTED_COUNT="${SMOKE_GEOSPARQL_EXPECTED_COUNT:-1}"
-SMOKE_FTS_EXPECTED_COUNT="${SMOKE_FTS_EXPECTED_COUNT:-2}"
-SMOKE_SPATIAL_INDEX_EXPECTED_COUNT="${SMOKE_SPATIAL_INDEX_EXPECTED_COUNT:-4}"
-SMOKE_TIMEOUT_SECONDS="${SMOKE_TIMEOUT_SECONDS:-90}"
-SMOKE_DELETE_SPATIAL_INDEX_CMD="${SMOKE_DELETE_SPATIAL_INDEX_CMD:-}"
-SMOKE_RESTART_CMD="${SMOKE_RESTART_CMD:-}"
+FUSEKI_BASE_URL="http://localhost:3030"
+SMOKE_DATASET="test-geosparql"
+SMOKE_DATA_FILE="${REPO_ROOT}/testdata/data-geosparql.ttl"
+SMOKE_DATA_GRAPH="https://example.org/smoke-graph"
+SMOKE_GEOSPARQL_EXPECTED_COUNT="1"
+SMOKE_FTS_EXPECTED_COUNT="2"
+SMOKE_SPATIAL_INDEX_EXPECTED_COUNT="4"
+SMOKE_TIMEOUT_SECONDS="90"
+SPATIAL_INDEX_FILE="/fuseki/databases/test-geosparql/spatial.index"
+
+SMOKE_COMPOSE=(
+  docker compose
+  -f docker-compose.yml
+  -f docker-compose.smoke.yml
+  --profile fuseki
+)
 
 if [[ ! -f "${SMOKE_DATA_FILE}" ]]; then
   echo "Smoke test data file does not exist: ${SMOKE_DATA_FILE}" >&2
@@ -34,11 +41,7 @@ fi
 ping_url="${FUSEKI_BASE_URL}/\$/ping"
 datasets_url="${FUSEKI_BASE_URL}/\$/datasets"
 query_url="${FUSEKI_BASE_URL}/${SMOKE_DATASET}/sparql"
-if [[ -n "${SMOKE_DATA_GRAPH}" ]]; then
-  data_url="${FUSEKI_BASE_URL}/${SMOKE_DATASET}/data?graph=${SMOKE_DATA_GRAPH}"
-else
-  data_url="${FUSEKI_BASE_URL}/${SMOKE_DATASET}/data?default"
-fi
+data_url="${FUSEKI_BASE_URL}/${SMOKE_DATASET}/data?graph=${SMOKE_DATA_GRAPH}"
 
 wait_for_fuseki() {
   echo "Waiting for Fuseki: ${ping_url}"
@@ -56,14 +59,13 @@ wait_for_fuseki() {
 
 wait_for_fuseki
 
-tmp_create="$(mktemp)"
 tmp_datasets="$(mktemp)"
 tmp_upload="$(mktemp)"
 tmp_query_geosparql="$(mktemp)"
 tmp_query_fts="$(mktemp)"
 tmp_query_spatial_index="$(mktemp)"
 cleanup() {
-  rm -f "${tmp_create}" "${tmp_datasets}" "${tmp_upload}" "${tmp_query_geosparql}" "${tmp_query_fts}" "${tmp_query_spatial_index}"
+  rm -f "${tmp_datasets}" "${tmp_upload}" "${tmp_query_geosparql}" "${tmp_query_fts}" "${tmp_query_spatial_index}"
 }
 trap cleanup EXIT
 
@@ -85,11 +87,7 @@ else
 fi
 
 echo "Uploading data: ${SMOKE_DATA_FILE}"
-if [[ -n "${SMOKE_DATA_GRAPH}" ]]; then
-  echo "Target graph: ${SMOKE_DATA_GRAPH}"
-else
-  echo "Target graph: default"
-fi
+echo "Target graph: ${SMOKE_DATA_GRAPH}"
 upload_status="$(
   curl -sS -o "${tmp_upload}" -w "%{http_code}" -X POST "${data_url}" \
     -H "Content-Type: text/turtle" \
@@ -101,16 +99,12 @@ if [[ "${upload_status}" != "200" && "${upload_status}" != "201" && "${upload_st
   exit 1
 fi
 
-if [[ -n "${SMOKE_DELETE_SPATIAL_INDEX_CMD}" ]]; then
-  echo "Deleting spatial index file before restart"
-  bash -lc "${SMOKE_DELETE_SPATIAL_INDEX_CMD}"
-fi
+echo "Deleting spatial index file before restart: ${SPATIAL_INDEX_FILE}"
+"${SMOKE_COMPOSE[@]}" exec -T fuseki sh -lc "rm -f ${SPATIAL_INDEX_FILE}"
 
-if [[ -n "${SMOKE_RESTART_CMD}" ]]; then
-  echo "Restarting Fuseki to trigger spatial index creation"
-  bash -lc "${SMOKE_RESTART_CMD}"
-  wait_for_fuseki
-fi
+echo "Restarting Fuseki to trigger spatial index creation"
+"${SMOKE_COMPOSE[@]}" restart fuseki
+wait_for_fuseki
 
 run_query_and_assert() {
   local label="$1"

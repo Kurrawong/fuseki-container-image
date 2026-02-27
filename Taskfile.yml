@@ -22,7 +22,7 @@ tasks:
     cmd: docker compose --profile fuseki down -v
 
   fuseki:smoke:run:
-    desc: Run GeoSPARQL and Lucene FTS smoke checks against an already-running Fuseki instance (supports optional spatial index delete + restart hooks)
+    desc: Run deterministic Fuseki smoke test (upload data, rebuild spatial index, assert queries)
     cmd: ./scripts/fuseki-smoke-test.sh
 
   fuseki:smoke:
@@ -32,7 +32,7 @@ tasks:
       - docker compose -f docker-compose.yml -f docker-compose.smoke.yml --profile fuseki build
       - docker compose -f docker-compose.yml -f docker-compose.smoke.yml --profile fuseki up -d
       - defer: docker compose -f docker-compose.yml -f docker-compose.smoke.yml --profile fuseki down -v
-      - SMOKE_DELETE_SPATIAL_INDEX_CMD="docker compose -f docker-compose.yml -f docker-compose.smoke.yml --profile fuseki exec -T fuseki sh -lc 'rm -f /fuseki/databases/test-geosparql/spatial.index'" SMOKE_RESTART_CMD="docker compose -f docker-compose.yml -f docker-compose.smoke.yml --profile fuseki restart fuseki" task fuseki:smoke:run
+      - task fuseki:smoke:run
 
   fuseki:smoke:ci:
     desc: CI variant of smoke test with smoke config and quiet Docker build output, then clean up
@@ -41,4 +41,4 @@ tasks:
       - docker compose -f docker-compose.yml -f docker-compose.smoke.yml --profile fuseki build -q
       - docker compose -f docker-compose.yml -f docker-compose.smoke.yml --profile fuseki up -d
       - defer: docker compose -f docker-compose.yml -f docker-compose.smoke.yml --profile fuseki down -v
-      - SMOKE_DELETE_SPATIAL_INDEX_CMD="docker compose -f docker-compose.yml -f docker-compose.smoke.yml --profile fuseki exec -T fuseki sh -lc 'rm -f /fuseki/databases/test-geosparql/spatial.index'" SMOKE_RESTART_CMD="docker compose -f docker-compose.yml -f docker-compose.smoke.yml --profile fuseki restart fuseki" task fuseki:smoke:run
+      - task fuseki:smoke:run
