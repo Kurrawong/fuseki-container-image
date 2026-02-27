@@ -27,7 +27,7 @@ jobs:
       - uses: go-task/setup-task@v1
 
       - name: Run smoke test
-        run: task fuseki:smoke
+        run: task fuseki:smoke:ci
 
       - name: Docker metadata
         id: metadata

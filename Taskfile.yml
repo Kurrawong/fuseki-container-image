@@ -22,12 +22,23 @@ tasks:
     cmd: docker compose --profile fuseki down -v
 
   fuseki:smoke:run:
+    desc: Run the Fuseki smoke test against an already-running local instance
     cmd: ./scripts/fuseki-smoke-test.sh
 
   fuseki:smoke:
+    desc: Build and run Fuseki locally, execute smoke test, then clean up (verbose build logs)
     cmds:
       - docker compose --profile fuseki down -v || true
       - docker compose --profile fuseki build
+      - docker compose --profile fuseki up -d
+      - defer: docker compose --profile fuseki down -v
+      - task fuseki:smoke:run
+
+  fuseki:smoke:ci:
+    desc: CI variant of smoke test with quiet Docker build output, then clean up
+    cmds:
+      - docker compose --profile fuseki down -v || true
+      - docker compose --profile fuseki build -q
       - docker compose --profile fuseki up -d
       - defer: docker compose --profile fuseki down -v
       - task fuseki:smoke:run
