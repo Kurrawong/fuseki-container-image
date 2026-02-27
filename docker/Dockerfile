@@ -1,4 +1,4 @@
-ARG JENA_VERSION=5.5.0
+ARG JENA_VERSION=6.0.0
 ARG JENA_HOME="/opt/jena"
 ARG FUSEKI_HOME="/opt/fuseki"
 ARG FUSEKI_BASE="/fuseki"
@@ -7,7 +7,7 @@ ARG JAVA_OPTIONS="-Xmx2048m -Xms2048m"
 #
 # Builder
 #
-FROM maven:3-eclipse-temurin-17 AS builder
+FROM maven:3-eclipse-temurin-21 AS builder
 ARG JENA_VERSION
 ARG JENA_HOME
 ARG FUSEKI_HOME
@@ -66,7 +66,7 @@ RUN unzip "${JENA_BUILD_DIR}/jena/apache-jena/target/apache-jena-${JENA_VERSION}
 #
 # Final
 #
-FROM amazoncorretto:17-alpine3.19 AS final
+FROM amazoncorretto:21-alpine3.19 AS final
 ARG JENA_VERSION
 ENV JENA_VERSION=${JENA_VERSION}
 ARG JENA_HOME

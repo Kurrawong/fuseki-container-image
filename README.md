@@ -9,9 +9,20 @@
 
 The image is available as `ghcr.io/kurrawong/fuseki:<version>` where version is composed of the jena version and this container image's build version number.
 
-For example, `ghcr.io/kurrawong/fuseki:5.2.0-0` is built on Jena Fuseki 5.2.0 and the `0` indicates the build number of this container image. If we release a new build that's still based on Jena 5.2.0, the build number will be incremented to 1 to form `ghcr.io/kurrawong/fuseki:5.2.0-1`.
+For example, `ghcr.io/kurrawong/fuseki:6.0.0-0` is built on Jena Fuseki 6.0.0 and the `0` indicates the build number of this container image. If we release a new build that's still based on Jena 6.0.0, the build number will be incremented to 1 to form `ghcr.io/kurrawong/fuseki:6.0.0-1`.
 
 See the tagged [images here](https://github.com/Kurrawong/fuseki-container-image/pkgs/container/fuseki).
+
+## Jena 6.0.0 migration notes
+
+- Minimum Java version is Java 21. This image now builds and runs on Java 21.
+- TDB2 data reload is recommended for existing datasets (especially if `xsd:decimal` values are used).
+- GeoSPARQL spatial indexes from Jena 5.x must be recreated because of the Kryo5 upgrade.
+  - Back up databases and indexes before migration.
+  - Delete or move old `spatial.index` files; missing indexes are rebuilt on startup.
+- `jena-text` now uses Lucene 10; rebuild Lucene indexes for existing datasets.
+- Removed modules in Jena 6 include `jena-iri`, `jena-fuseki-webapp`, `jena-fuseki-war`, and `jena-permissions`.
+- Package `org.apache.jena.tdb` was removed; use TDB2 or `org.apache.jena.tdb1` if needed.
 
 ## Usage
 
@@ -264,6 +275,6 @@ See [Taskfile.yml](Taskfile.yml) for local development commands.
 We can build patches for Jena ourselves by developing on a specific version of the Jena source code, and including patches in `/docker/patches`.
 A simple example of this is the addition of the GeoSPARQL dependency in `/docker/patches/enable-geosparql.diff` as inspired by the zazuko docker image.
 
-The process to add these to our own jena deployment is to check out the current Jena version tag from https://github.com/apache/jena , e.g. using `git checkout jena-5.2.0`
+The process to add these to our own jena deployment is to check out the current Jena version tag from https://github.com/apache/jena , e.g. using `git checkout jena-6.0.0`
 
 Then make the necessary changes, and run `git diff > my-patch.diff` and add `my-patch.diff` to `/docker/patches` and in the `Dockerfile`.
