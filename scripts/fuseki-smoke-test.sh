@@ -98,6 +98,9 @@ if [[ "${query_status}" != "200" ]]; then
   exit 1
 fi
 
+echo "Smoke query response:"
+jq . "${tmp_query}"
+
 actual_count="$(jq -r '.results.bindings | length' "${tmp_query}")"
 if [[ "${actual_count}" != "${SMOKE_EXPECTED_COUNT}" ]]; then
   echo "Unexpected smoke query result count. Expected ${SMOKE_EXPECTED_COUNT}, got ${actual_count}" >&2
