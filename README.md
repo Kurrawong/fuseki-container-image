@@ -9,20 +9,11 @@
 
 The image is available as `ghcr.io/kurrawong/fuseki:<version>` where version is composed of the jena version and this container image's build version number.
 
-For example, `ghcr.io/kurrawong/fuseki:6.0.0-0` is built on Jena Fuseki 6.0.0 and the `0` indicates the build number of this container image. If we release a new build that's still based on Jena 6.0.0, the build number will be incremented to 1 to form `ghcr.io/kurrawong/fuseki:6.0.0-1`.
+For example, `ghcr.io/kurrawong/fuseki:5.6.0-0` is built on Jena Fuseki 5.6.0 and the `0` indicates the build number of this container image. If we release a new build that's still based on Jena 5.6.0, the build number will be incremented to 1 to form `ghcr.io/kurrawong/fuseki:5.6.0-1`.
+
+This image builds and runs on Java 21.
 
 See the tagged [images here](https://github.com/Kurrawong/fuseki-container-image/pkgs/container/fuseki).
-
-## Jena 6.0.0 migration notes
-
-- Minimum Java version is Java 21. This image now builds and runs on Java 21.
-- TDB2 data reload is recommended for existing datasets (especially if `xsd:decimal` values are used).
-- GeoSPARQL spatial indexes from Jena 5.x must be recreated because of the Kryo5 upgrade.
-  - Back up databases and indexes before migration.
-  - Delete or move old `spatial.index` files; missing indexes are rebuilt on startup.
-- `jena-text` now uses Lucene 10; rebuild Lucene indexes for existing datasets.
-- Removed modules in Jena 6 include `jena-iri`, `jena-fuseki-webapp`, `jena-fuseki-war`, and `jena-permissions`.
-- Package `org.apache.jena.tdb` was removed; use TDB2 or `org.apache.jena.tdb1` if needed.
 
 ## Usage
 
@@ -295,7 +286,7 @@ The smoke test is deterministic and will fail fast if the image/runtime behaviou
 
 Only follow this path when you need behaviour that is not available in upstream Jena:
 
-- check out the target Jena tag from https://github.com/apache/jena (for example `git checkout jena-6.0.0`)
+- check out the target Jena tag from https://github.com/apache/jena (for example `git checkout jena-5.6.0`)
 - make your changes in Jena source
 - generate a patch with `git diff > my-patch.diff`
 - add the patch to `/docker/patches`
