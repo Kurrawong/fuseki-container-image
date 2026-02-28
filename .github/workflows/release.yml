@@ -24,6 +24,11 @@ jobs:
         id: version
         run: echo "VALUE=$(npx --yes semver ${{ github.event.release.tag_name }})" >> "$GITHUB_OUTPUT"
 
+      - uses: go-task/setup-task@v1
+
+      - name: Run smoke test
+        run: task fuseki:smoke:ci
+
       - name: Docker metadata
         id: metadata
         uses: docker/metadata-action@v5
