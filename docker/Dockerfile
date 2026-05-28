@@ -66,7 +66,7 @@ RUN unzip "${JENA_BUILD_DIR}/jena/apache-jena/target/apache-jena-${JENA_VERSION}
 #
 # Final
 #
-FROM amazoncorretto:21-alpine3.19 AS final
+FROM amazoncorretto:21-alpine3.23 AS final
 ARG JENA_VERSION
 ENV JENA_VERSION=${JENA_VERSION}
 ARG JENA_HOME
