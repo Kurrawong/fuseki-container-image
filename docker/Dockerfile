@@ -1,4 +1,4 @@
-ARG JENA_VERSION=5.6.0
+ARG JENA_VERSION=6.1.0
 ARG JENA_HOME="/opt/jena"
 ARG FUSEKI_HOME="/opt/fuseki"
 ARG FUSEKI_BASE="/fuseki"
@@ -44,7 +44,7 @@ COPY patches/enable-geosparql.diff .
 RUN patch -p1 < enable-geosparql.diff
 
 WORKDIR ${JENA_BUILD_DIR}/jena/jena-fuseki2
-RUN mvn package -Dmaven.javadoc.skip=true -DskipTests
+RUN mvn --batch-mode --no-transfer-progress package -Dmaven.javadoc.skip=true -DskipTests
 
 RUN unzip "${JENA_BUILD_DIR}/jena/jena-fuseki2/apache-jena-fuseki/target/apache-jena-fuseki-${JENA_VERSION}.zip" \
   && mkdir -p "${FUSEKI_HOME}" \
@@ -54,7 +54,7 @@ RUN unzip "${JENA_BUILD_DIR}/jena/jena-fuseki2/apache-jena-fuseki/target/apache-
   && rm -rf "apache-jena-fuseki-${JENA_VERSION}"
 
 WORKDIR ${JENA_BUILD_DIR}/jena/apache-jena
-RUN mvn package -Dmaven.javadoc.skip=true -DskipTests
+RUN mvn --batch-mode --no-transfer-progress package -Dmaven.javadoc.skip=true -DskipTests
 
 RUN unzip "${JENA_BUILD_DIR}/jena/apache-jena/target/apache-jena-${JENA_VERSION}.zip" \
   && mkdir -p "${JENA_HOME}" \
