@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+: "${SMOKE_ADMIN_PASSWORD:?SMOKE_ADMIN_PASSWORD must be set}"
+: "${SMOKE_JAVA_OPTIONS:?SMOKE_JAVA_OPTIONS must be set}"
+
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "Missing required command: $1" >&2
@@ -59,6 +62,14 @@ wait_for_fuseki() {
 
 wait_for_fuseki
 
+java_command="$("${SMOKE_COMPOSE[@]}" exec -T fuseki sh -c "tr '\000' ' ' < /proc/1/cmdline")"
+for java_option in ${SMOKE_JAVA_OPTIONS}; do
+  if [[ " ${java_command} " != *" ${java_option} "* ]]; then
+    echo "Configured JVM option did not reach the Java process: ${java_option}" >&2
+    exit 1
+  fi
+done
+
 tmp_datasets="$(mktemp)"
 tmp_upload="$(mktemp)"
 tmp_query_geosparql="$(mktemp)"
@@ -70,7 +81,9 @@ cleanup() {
 trap cleanup EXIT
 
 datasets_status="$(
-  curl -sS -o "${tmp_datasets}" -w "%{http_code}" "${datasets_url}"
+  curl -sS -o "${tmp_datasets}" -w "%{http_code}" \
+    --user "admin:${SMOKE_ADMIN_PASSWORD}" \
+    "${datasets_url}"
 )"
 if [[ "${datasets_status}" != "200" ]]; then
   echo "Failed to list datasets (HTTP ${datasets_status})" >&2
@@ -90,6 +103,7 @@ echo "Uploading data: ${SMOKE_DATA_FILE}"
 echo "Target graph: ${SMOKE_DATA_GRAPH}"
 upload_status="$(
   curl -sS -o "${tmp_upload}" -w "%{http_code}" -X POST "${data_url}" \
+    --user "admin:${SMOKE_ADMIN_PASSWORD}" \
     -H "Content-Type: text/turtle" \
     --data-binary "@${SMOKE_DATA_FILE}"
 )"
@@ -115,6 +129,7 @@ run_query_and_assert() {
   local status
   status="$(
     curl -sS -o "${output_file}" -w "%{http_code}" -G "${query_url}" \
+      --user "admin:${SMOKE_ADMIN_PASSWORD}" \
       --data-urlencode "query=${query}" \
       --data-urlencode "format=application/sparql-results+json"
   )"

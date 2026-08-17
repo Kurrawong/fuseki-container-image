@@ -2,6 +2,10 @@
 
 version: "3"
 
+env:
+  SMOKE_ADMIN_PASSWORD: fuseki-smoke-test-password
+  SMOKE_JAVA_OPTIONS: -Xms384m -Xmx384m
+
 tasks:
   default:
     cmd: task -a
@@ -42,3 +46,19 @@ tasks:
       - docker compose -f docker-compose.yml -f docker-compose.smoke.yml --profile fuseki up -d
       - defer: docker compose -f docker-compose.yml -f docker-compose.smoke.yml --profile fuseki down -v
       - task fuseki:smoke:run
+
+  fuseki:shiro:test:
+    desc: Test Shiro rendering, precedence, access control, permissions, and JVM options against the built image
+    cmd: ./scripts/fuseki-shiro-test.sh
+
+  fuseki:verify:
+    desc: Build the image and run all runtime verification
+    cmds:
+      - task fuseki:smoke
+      - task fuseki:shiro:test
+
+  fuseki:verify:ci:
+    desc: CI variant of full runtime verification
+    cmds:
+      - task fuseki:smoke:ci
+      - task fuseki:shiro:test
