@@ -15,11 +15,27 @@ DEFAULT_PASSWORD_BASE="$(mktemp -d)"
 INVALID_PASSWORD_BASE="$(mktemp -d)"
 CUSTOM_SOURCE_FILE="$(mktemp)"
 
+make_test_base_removable() {
+  local path="$1"
+
+  docker run --rm \
+    --user 0 \
+    --volume "${path}:/fuseki" \
+    --entrypoint chown \
+    "${IMAGE_NAME}" \
+    -R "$(id -u):$(id -g)" /fuseki >/dev/null 2>&1 || true
+}
+
 cleanup() {
   docker rm -f "${CONTAINER_NAME}" >/dev/null 2>&1 || true
   docker rm -f "${CUSTOM_RUNTIME_CONTAINER}" >/dev/null 2>&1 || true
   docker rm -f "${CUSTOM_SOURCE_CONTAINER}" >/dev/null 2>&1 || true
   docker rm -f "${DEFAULT_PASSWORD_CONTAINER}" >/dev/null 2>&1 || true
+  make_test_base_removable "${TEST_BASE}"
+  make_test_base_removable "${CUSTOM_RUNTIME_BASE}"
+  make_test_base_removable "${CUSTOM_SOURCE_BASE}"
+  make_test_base_removable "${DEFAULT_PASSWORD_BASE}"
+  make_test_base_removable "${INVALID_PASSWORD_BASE}"
   rm -rf \
     "${TEST_BASE}" \
     "${CUSTOM_RUNTIME_BASE}" \
@@ -220,13 +236,13 @@ docker run --detach \
 wait_for_ping "${CUSTOM_SOURCE_CONTAINER}"
 
 docker exec "${CUSTOM_SOURCE_CONTAINER}" grep -Fq 'custom-source-marker' /fuseki/shiro.ini || fail "mounted Shiro source did not take precedence"
-custom_source_checksum="$(sha256sum "${CUSTOM_SOURCE_BASE}/shiro.ini")"
+custom_source_checksum="$(docker exec "${CUSTOM_SOURCE_CONTAINER}" sha256sum /fuseki/shiro.ini)"
 
 docker restart "${CUSTOM_SOURCE_CONTAINER}" >/dev/null
 wait_for_ping "${CUSTOM_SOURCE_CONTAINER}"
 assert_equals \
   "${custom_source_checksum}" \
-  "$(sha256sum "${CUSTOM_SOURCE_BASE}/shiro.ini")" \
+  "$(docker exec "${CUSTOM_SOURCE_CONTAINER}" sha256sum /fuseki/shiro.ini)" \
   "runtime configuration rendered from a custom source changed across restart"
 docker exec "${CUSTOM_SOURCE_CONTAINER}" grep -Fq 'custom-source-marker' /fuseki/shiro.ini || fail "custom source configuration did not survive restart"
 
