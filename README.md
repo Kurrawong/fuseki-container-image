@@ -40,10 +40,10 @@ authentication for every other endpoint. The default credentials are
 `admin`/`admin`. Override `ADMIN_PASSWORD` with a strong password before
 exposing the server, and use HTTPS outside a trusted local environment.
 
-`JAVA_OPTIONS` configures JVM arguments. For example:
+`JAVA_OPTS` configures JVM arguments. For example:
 
 ```
-JAVA_OPTIONS='-Xms1g -Xmx1g' ADMIN_PASSWORD='replace-with-a-strong-password' task fuseki:up
+JAVA_OPTS='-Xms1g -Xmx1g' ADMIN_PASSWORD='replace-with-a-strong-password' task fuseki:up
 ```
 
 #### GeoSPARQL config and testing

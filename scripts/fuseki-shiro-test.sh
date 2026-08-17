@@ -127,7 +127,7 @@ assert_password_rejected "whitespace-padded" ' unsafe-password '
 docker run --detach \
   --name "${CONTAINER_NAME}" \
   --env "ADMIN_PASSWORD=${TEST_PASSWORD}" \
-  --env "JAVA_OPTIONS=-Xms96m -Xmx96m" \
+  --env "JAVA_OPTS=-Xms96m -Xmx96m" \
   --volume "${TEST_BASE}:/fuseki" \
   "${IMAGE_NAME}" >/dev/null
 
@@ -178,7 +178,7 @@ assert_equals "401" "${anonymous_write_status}" "anonymous write status"
 
 java_command="$(docker exec "${CONTAINER_NAME}" sh -c "tr '\000' ' ' < /proc/1/cmdline")"
 if [[ " ${java_command} " != *" -Xms96m "* || " ${java_command} " != *" -Xmx96m "* ]]; then
-  fail "JAVA_OPTIONS did not reach the Java process"
+  fail "JAVA_OPTS did not reach the Java process"
 fi
 
 container_logs="$(docker logs "${CONTAINER_NAME}" 2>&1)"

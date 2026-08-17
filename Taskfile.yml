@@ -4,7 +4,7 @@ version: "3"
 
 env:
   SMOKE_ADMIN_PASSWORD: fuseki-smoke-test-password
-  SMOKE_JAVA_OPTIONS: -Xms384m -Xmx384m
+  SMOKE_JAVA_OPTS: -Xms384m -Xmx384m
 
 tasks:
   default:

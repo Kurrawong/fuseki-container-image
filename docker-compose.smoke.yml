@@ -2,6 +2,6 @@ services:
   fuseki:
     environment:
       ADMIN_PASSWORD: ${SMOKE_ADMIN_PASSWORD:?Run the smoke test through Taskfile}
-      JAVA_OPTIONS: ${SMOKE_JAVA_OPTIONS:?Run the smoke test through Taskfile}
+      JAVA_OPTS: ${SMOKE_JAVA_OPTS:?Run the smoke test through Taskfile}
     volumes:
       - ./testdata/config-geosparql.ttl:/opt/fuseki/configuration/config-geosparql.ttl:ro

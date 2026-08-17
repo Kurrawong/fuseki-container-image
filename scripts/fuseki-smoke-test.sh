@@ -3,7 +3,7 @@
 set -euo pipefail
 
 : "${SMOKE_ADMIN_PASSWORD:?SMOKE_ADMIN_PASSWORD must be set}"
-: "${SMOKE_JAVA_OPTIONS:?SMOKE_JAVA_OPTIONS must be set}"
+: "${SMOKE_JAVA_OPTS:?SMOKE_JAVA_OPTS must be set}"
 
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -63,7 +63,7 @@ wait_for_fuseki() {
 wait_for_fuseki
 
 java_command="$("${SMOKE_COMPOSE[@]}" exec -T fuseki sh -c "tr '\000' ' ' < /proc/1/cmdline")"
-for java_option in ${SMOKE_JAVA_OPTIONS}; do
+for java_option in ${SMOKE_JAVA_OPTS}; do
   if [[ " ${java_command} " != *" ${java_option} "* ]]; then
     echo "Configured JVM option did not reach the Java process: ${java_option}" >&2
     exit 1
