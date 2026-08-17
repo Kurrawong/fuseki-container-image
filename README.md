@@ -269,7 +269,7 @@ WHERE {
 ### Shiro configuration lifecycle
 
 The image stores its Shiro source at `/opt/fuseki/shiro.ini`, outside the
-persistent `FUSEKI_BASE` directory. On first startup, the entrypoint renders
+persistent `FUSEKI_BASE` directory. On every startup, the entrypoint renders
 `${ADMIN_PASSWORD}` and atomically installs the result as
 `/fuseki/shiro.ini`, owned by UID/GID 1000 with mode `0600`. The image defaults
 `ADMIN_PASSWORD` to `admin`; setting the variable overrides it. Rendered
@@ -277,19 +277,21 @@ credentials are never printed by the entrypoint.
 
 Configuration precedence is:
 
-1. An existing `/fuseki/shiro.ini` wins and is never overwritten. This supports
-   a directly managed runtime file and preserves configuration in a persistent
-   volume across restarts.
-2. Otherwise, `/opt/fuseki/shiro.ini` is rendered into `/fuseki/shiro.ini`.
-   Bind-mounting a custom source at `/opt/fuseki/shiro.ini` therefore replaces
-   the bundled source without being hidden by a `/fuseki` mount.
+1. `/opt/fuseki/shiro.ini` is the authoritative source and is rendered on every
+   startup. Bind-mount a custom source at this path to manage credentials and
+   access policy.
+2. `/fuseki/shiro.ini` is generated output. An existing file at this path is
+   replaced on startup, including when `FUSEKI_BASE` is persistent.
 
 Only the `${ADMIN_PASSWORD}` placeholder is substituted. Shiro references such
 as `$plainMatcher` remain unchanged. Because Shiro's user record is
 comma-delimited, `ADMIN_PASSWORD` must not contain commas, line breaks, or
-leading/trailing whitespace. Other punctuation is supported. To regenerate a
-persisted runtime file from an updated source, remove `/fuseki/shiro.ini` while
-the container is stopped and then start it again.
+leading/trailing whitespace. Other punctuation is supported. After updating a
+mounted source, restart or recreate the container to apply the new policy.
+
+When upgrading, any directly managed `/fuseki/shiro.ini` is replaced on the
+next startup. Move custom configuration to the authoritative source path before
+upgrading.
 
 For example, to use a custom source:
 

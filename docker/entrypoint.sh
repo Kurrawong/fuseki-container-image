@@ -2,35 +2,33 @@
 
 set -eu
 
-# Materialize the runtime Shiro configuration from the immutable application
-# tree. An existing runtime file is treated as explicitly managed and preserved.
-if [ ! -e "${FUSEKI_BASE}/shiro.ini" ]; then
-  if grep -Fq '${ADMIN_PASSWORD}' "${FUSEKI_HOME}/shiro.ini"; then
-    if [ -z "${ADMIN_PASSWORD:-}" ]; then
-      echo "ADMIN_PASSWORD must be set when the Shiro source uses its placeholder" >&2
-      exit 1
-    fi
-
-    carriage_return="$(printf '\r')"
-    line_feed='
-'
-    case "${ADMIN_PASSWORD}" in
-      *","*|*"${carriage_return}"*|*"${line_feed}"*|[[:space:]]*|*[[:space:]])
-        echo "ADMIN_PASSWORD must not contain commas, line breaks, or leading/trailing whitespace" >&2
-        exit 1
-        ;;
-    esac
-  fi
-
-  shiro_tmp="$(umask 077 && mktemp "${FUSEKI_BASE}/shiro.ini.tmp.XXXXXX")"
-  trap 'rm -f "${shiro_tmp}"' 0 1 2 15
-  if ! envsubst '${ADMIN_PASSWORD}' < "${FUSEKI_HOME}/shiro.ini" > "${shiro_tmp}"; then
+# Materialize the runtime Shiro configuration from the application source on
+# every start so source-managed credential and policy updates take effect.
+if grep -Fq '${ADMIN_PASSWORD}' "${FUSEKI_HOME}/shiro.ini"; then
+  if [ -z "${ADMIN_PASSWORD:-}" ]; then
+    echo "ADMIN_PASSWORD must be set when the Shiro source uses its placeholder" >&2
     exit 1
   fi
-  chmod 600 "${shiro_tmp}"
-  mv "${shiro_tmp}" "${FUSEKI_BASE}/shiro.ini"
-  trap - 0 1 2 15
+
+  carriage_return="$(printf '\r')"
+  line_feed='
+'
+  case "${ADMIN_PASSWORD}" in
+    *","*|*"${carriage_return}"*|*"${line_feed}"*|[[:space:]]*|*[[:space:]])
+      echo "ADMIN_PASSWORD must not contain commas, line breaks, or leading/trailing whitespace" >&2
+      exit 1
+      ;;
+  esac
 fi
+
+shiro_tmp="$(umask 077 && mktemp "${FUSEKI_BASE}/shiro.ini.tmp.XXXXXX")"
+trap 'rm -f "${shiro_tmp}"' 0 1 2 15
+if ! envsubst '${ADMIN_PASSWORD}' < "${FUSEKI_HOME}/shiro.ini" > "${shiro_tmp}"; then
+  exit 1
+fi
+chmod 600 "${shiro_tmp}"
+mv "${shiro_tmp}" "${FUSEKI_BASE}/shiro.ini"
+trap - 0 1 2 15
 
 # Create configuration directory if it doesn't exist
 mkdir -p "${FUSEKI_BASE}/configuration"
