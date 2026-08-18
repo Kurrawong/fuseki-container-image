@@ -1,8 +1,8 @@
-ARG JENA_VERSION=6.1.0
+ARG JENA_VERSION=6.2.0
 ARG JENA_HOME="/opt/jena"
 ARG FUSEKI_HOME="/opt/fuseki"
 ARG FUSEKI_BASE="/fuseki"
-ARG JAVA_OPTIONS="-Xmx2048m -Xms2048m"
+ARG JAVA_OPTS="-Xmx2048m -Xms2048m"
 
 #
 # Builder
@@ -75,8 +75,9 @@ ARG FUSEKI_HOME
 ENV FUSEKI_HOME=${FUSEKI_HOME}
 ARG FUSEKI_BASE
 ENV FUSEKI_BASE=${FUSEKI_BASE}
-ARG JAVA_OPTIONS
-ENV JAVA_OPTIONS=${JAVA_OPTIONS}
+ARG JAVA_OPTS
+ENV JAVA_OPTS=${JAVA_OPTS}
+ENV ADMIN_PASSWORD="admin"
 
 RUN apk add --no-cache \
         bash \
@@ -84,6 +85,8 @@ RUN apk add --no-cache \
         curl \
         # jq required for tdb2.xloader
         jq \
+        # envsubst renders the runtime Shiro configuration
+        gettext-envsubst \
         # coreutils required for tdb2.xloader with an updated version of sort with parallel support
         coreutils
 
@@ -96,7 +99,7 @@ COPY --from=builder ${FUSEKI_HOME} ${FUSEKI_HOME}
 
 ENV PATH="${JENA_HOME}/bin:${FUSEKI_HOME}:${PATH}"
 
-COPY shiro.ini ${FUSEKI_BASE}/shiro.ini
+COPY shiro.ini ${FUSEKI_HOME}/shiro.ini
 COPY config.ttl ${FUSEKI_BASE}/config.ttl
 COPY entrypoint.sh ${FUSEKI_HOME}/entrypoint.sh
 

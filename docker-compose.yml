@@ -8,7 +8,8 @@ services:
     volumes:
       - fuseki-data:/fuseki
     environment:
-      - JAVA_OPTIONS=-Xmx2048m -Xms2048m
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
+      JAVA_OPTS: ${JAVA_OPTS:--Xmx2048m -Xms2048m}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3030/$/ping"]
       interval: 10s

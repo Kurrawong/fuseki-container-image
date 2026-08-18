@@ -35,6 +35,17 @@ task fuseki:up
 
 This will enable the Fuseki UI at http://localhost:3030/
 
+The bundled security policy leaves `/$/ping` anonymous and requires HTTP Basic
+authentication for every other endpoint. The default credentials are
+`admin`/`admin`. Override `ADMIN_PASSWORD` with a strong password before
+exposing the server, and use HTTPS outside a trusted local environment.
+
+`JAVA_OPTS` configures JVM arguments. For example:
+
+```
+JAVA_OPTS='-Xms1g -Xmx1g' ADMIN_PASSWORD='replace-with-a-strong-password' task fuseki:up
+```
+
 #### GeoSPARQL config and testing
 
 A testdatabase is configured in `testdata/config-geosparql.ttl`. It has all features enabled by default. You can disable them by setting the following properties to `false`:
@@ -255,16 +266,59 @@ WHERE {
 
 ## Entrypoints
 
+### Shiro configuration lifecycle
+
+The image stores its Shiro source at `/opt/fuseki/shiro.ini`, outside the
+persistent `FUSEKI_BASE` directory. On every startup, the entrypoint renders
+`${ADMIN_PASSWORD}` and atomically installs the result as
+`/fuseki/shiro.ini`, owned by UID/GID 1000 with mode `0600`. The image defaults
+`ADMIN_PASSWORD` to `admin`; setting the variable overrides it. Rendered
+credentials are never printed by the entrypoint.
+
+Configuration precedence is:
+
+1. `/opt/fuseki/shiro.ini` is the authoritative source and is rendered on every
+   startup. Bind-mount a custom source at this path to manage credentials and
+   access policy.
+2. `/fuseki/shiro.ini` is generated output. An existing file at this path is
+   replaced on startup, including when `FUSEKI_BASE` is persistent.
+
+Only the `${ADMIN_PASSWORD}` placeholder is substituted. Shiro references such
+as `$plainMatcher` remain unchanged. Because Shiro's user record is
+comma-delimited, `ADMIN_PASSWORD` must not contain commas, line breaks, or
+leading/trailing whitespace. Other punctuation is supported. After updating a
+mounted source, restart or recreate the container to apply the new policy.
+
+When upgrading, any directly managed `/fuseki/shiro.ini` is replaced on the
+next startup. Move custom configuration to the authoritative source path before
+upgrading.
+
+For example, to use a custom source:
+
+```
+docker run --rm \
+  -e ADMIN_PASSWORD='replace-with-a-strong-password' \
+  -v fuseki-data:/fuseki \
+  -v ./shiro.ini:/opt/fuseki/shiro.ini:ro \
+  ghcr.io/kurrawong/fuseki:<version>
+```
+
 ## Adding Fuseki extensions to the classpath
 
 ## Local Development
 
 See [Taskfile.yml](Taskfile.yml) for local development commands.
 
+Run the complete runtime verification with:
+
+```
+task fuseki:verify
+```
+
 ## Jena patches/expansions
 
 We can build patches for Jena ourselves by developing on a specific version of the Jena source code, and including patches in `/docker/patches`.
-A simple example of this is the addition of the GeoSPARQL dependency in `/docker/patches/enable-geosparql.diff` as inspired by the zazuko docker image.
+A simple example is the addition of the GeoSPARQL dependency in `/docker/patches/enable-geosparql.diff`.
 
 ### Upgrading to a new upstream Jena version
 
